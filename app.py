@@ -6,7 +6,7 @@ import streamlit as st
 st.set_page_config(page_title="InfoVis Master", page_icon="📊", layout="wide")
 
 # ==========================================
-# Phase 2: UI 介面與功能選單定義 (導入 Tabs)
+# Phase 2: UI 介面與選單定義 (導入 Tabs 與模擬器)
 # ==========================================
 st.title("📊 InfoVis Master｜資訊視覺化簡報提示詞大師")
 st.markdown("請依序設定您的簡報視覺化參數")
@@ -77,6 +77,44 @@ with tab2:
             "底部 (Bottom)": "High angle composition, clear negative space at the BOTTOM for character insertion"
         }
         ip_position_logic = position_prompts.get(ip_position, "")
+
+        # ======== 視覺化模擬器 (UI 動態線框) ========
+        st.markdown("---")
+        st.markdown("### 👁️ 版面構圖預覽 (Composition Preview)")
+        st.caption("此線框圖協助您確認 AI 將如何為您的主角【預留空間】。")
+        
+        # 使用 Streamlit 內建排版繪製動態版面
+        with st.container(border=True):
+            if ip_position == "右側 (Right)":
+                c_text, c_img = st.columns([2, 1])
+                with c_text:
+                    st.markdown("#### 📊 資訊視覺化圖表與說明文字區")
+                    st.caption("AI 會在此處生成密集的視覺元素與背景。")
+                with c_img:
+                    st.error("👤 絕對淨空區\n\n(留給您的 IP)")
+                    
+            elif ip_position == "左側 (Left)":
+                c_img, c_text = st.columns([1, 2])
+                with c_img:
+                    st.error("👤 絕對淨空區\n\n(留給您的 IP)")
+                with c_text:
+                    st.markdown("#### 📊 資訊視覺化圖表與說明文字區")
+                    st.caption("AI 會在此處生成密集的視覺元素與背景。")
+                    
+            elif ip_position == "置中 (Center)":
+                c_side1, c_center, c_side2 = st.columns([1, 2, 1])
+                with c_side1:
+                    st.caption("背景裝飾區")
+                with c_center:
+                    st.error("👤 絕對淨空區\n\n(主角置中)")
+                with c_side2:
+                    st.caption("背景裝飾區")
+                    
+            elif ip_position == "底部 (Bottom)":
+                st.markdown("#### 📊 上方資訊視覺化區域")
+                st.caption("AI 會在畫面上半部生成資訊元素。")
+                st.error("👤 絕對淨空區 (留給您的 IP 站在底部)")
+        # =================================================
 
 with tab3:
     st.subheader("📄 指定簡報原始素材 (選填)")
