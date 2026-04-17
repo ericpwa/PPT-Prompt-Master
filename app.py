@@ -17,7 +17,7 @@ with st.sidebar:
     lang_choice = st.selectbox("參數 1: 輸出語言", ["繁體中文", "English"])
     tool_choice = st.selectbox("參數 2: 目標 AI 工具", ["NotebookLM (推薦)", "Gemini"])
     st.markdown("---")
-    st.caption("設計開發｜Pan Wen An\n\n版本：v2.3 動態灰階渲染版")
+    st.caption("設計開發｜Pan Wen An\n\n版本：v2.4 單頁灰階預覽版")
 
 tab1, tab2, tab3 = st.tabs(["📝 Step 1: 內容與受眾設定", "🎨 Step 2: 視覺與版面設定", "📄 Step 3: 原始素材輸入"])
 
@@ -81,16 +81,14 @@ with tab3:
 st.divider()
 
 # ==========================================
-# Phase 3.5: 動態灰階渲染引擎 (CTO 專屬黑科技)
+# Phase 3.5: 動態灰階渲染引擎 (單頁示範版)
 # ==========================================
 st.header("👁️ 成果預覽｜動態灰階排版示意圖")
 
-# 文本萃取邏輯 (抽取前 2 頁或前幾行)
+# 文本萃取邏輯 (精簡為只抽取首頁)
 lines = [line.strip() for line in raw_text.split('\n') if line.strip() and "第" not in line and "頁" not in line]
 slide_1_title = lines[0][:20] + "..." if len(lines) > 0 else "（請至 Step 3 輸入標題）"
 slide_1_content = lines[1][:50] + "..." if len(lines) > 1 else "（請至 Step 3 輸入內文素材，系統將自動擷取...）"
-slide_2_title = lines[2][:20] + "..." if len(lines) > 2 else "（載入第二頁標題中...）"
-slide_2_content = lines[3][:50] + "..." if len(lines) > 3 else "（載入第二頁內文素材中...）"
 
 # CSS 灰階線框樣式
 st.markdown("""
@@ -120,15 +118,9 @@ def render_wireframe(title, content, position):
         html = f"""<div class='wireframe-slide'><div class='wf-content'><div class='wf-title'>{title}</div><div class='wf-text'>{content}<br><br>[ 滿版 AI 視覺生成區 ]</div></div></div>"""
     return html
 
-# 渲染 1-2 頁示意圖 (依照參數 3 的頁數決定渲染數量)
-preview_cols = st.columns(min(page_num, 2) if page_num > 1 else 1)
-with preview_cols[0]:
-    st.markdown("**【Slide 1 構圖預測】**")
-    st.markdown(render_wireframe(slide_1_title, slide_1_content, ip_position), unsafe_allow_html=True)
-if page_num >= 2 and len(preview_cols) > 1:
-    with preview_cols[1]:
-        st.markdown("**【Slide 2 構圖預測】**")
-        st.markdown(render_wireframe(slide_2_title, slide_2_content, ip_position), unsafe_allow_html=True)
+# 渲染唯一 1 頁的示意圖
+st.markdown("**【首頁構圖預測】**")
+st.markdown(render_wireframe(slide_1_title, slide_1_content, ip_position), unsafe_allow_html=True)
 
 st.divider()
 
