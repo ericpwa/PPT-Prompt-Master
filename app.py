@@ -3,20 +3,20 @@ import streamlit as st
 # ==========================================
 # Phase 1: 系統設定與底層初始化
 # ==========================================
-st.set_page_config(page_title="JARVIS 簡報萬用導航器 v2.2", page_icon="🎨", layout="wide")
+st.set_page_config(page_title="InfoVis Master", page_icon="📊", layout="wide")
 
 # ==========================================
 # Phase 2: UI 介面與功能選單定義 (導入 Tabs)
 # ==========================================
-st.title("🚀 JARVIS 資訊視覺化簡報 Prompt 生成器 v2.2")
-st.markdown("BOSS，全場景構圖控制與分頁收納系統已就緒。請依序設定您的簡報戰略參數。")
+st.title("📊 InfoVis Master｜資訊視覺化簡報提示詞大師")
+st.markdown("請依序設定您的簡報視覺化參數")
 
 with st.sidebar:
     st.header("⚙️ 全局設定")
-    lang_choice = st.selectbox("功能 1: 輸出語言", ["繁體中文", "English"])
-    tool_choice = st.selectbox("功能 2: 目標 AI 工具", ["NotebookLM (推薦)", "Gemini"])
+    lang_choice = st.selectbox("參數 1: 輸出語言", ["繁體中文", "English"])
+    tool_choice = st.selectbox("參數 2: 目標 AI 工具", ["NotebookLM (推薦)", "Gemini"])
     st.markdown("---")
-    st.caption("v2.2 UI 分頁版 | 核心：字串拼接 | Mac M4 Pro")
+    st.caption("設計開發｜Pan Wen An")
 
 # 建立三個分頁標籤
 tab1, tab2, tab3 = st.tabs(["📝 Step 1: 內容與受眾設定", "🎨 Step 2: 視覺與版面設定", "📄 Step 3: 原始素材輸入"])
@@ -26,28 +26,28 @@ with tab1:
     col1, col2 = st.columns(2)
     
     with col1:
-        page_num = st.number_input("功能 3: 預計頁數", 1, 50, 5)
-        time_min = st.number_input("功能 4: 報告時間 (分)", 1, 120, 10)
+        page_num = st.number_input("參數 3: 預計頁數", 1, 50, 5)
+        time_min = st.number_input("參數 4: 報告時間 (分)", 1, 120, 10)
         roles = ["教授/講師", "行銷總監", "專案經理", "產品經理", "技術主管", "社群創作者/自由工作者", "專業顧問", "資深產業專家", "導覽員/解說員", "自訂角色", "不需要角色"]
-        role = st.selectbox("功能 5: 簡報角色 (我是誰)", roles)
+        role = st.selectbox("參數 5: 簡報角色 (我是誰)", roles)
         scenes = ["線上遠距教學", "線上視訊會議", "內部的工作進度匯報", "內部的提案會議", "對客戶的提案會議", "大型研討會", "學校課堂/期末報告", "電梯簡報", "自訂設定", "不需要設定"]
-        scene = st.selectbox("功能 6: 發表場景", scenes)
+        scene = st.selectbox("參數 6: 發表場景", scenes)
         audiences = ["零基礎初學者", "企業高階主管", "專業技術人員", "一般大眾", "學生與學術人員", "潛在客戶與決策者", "內部團隊與主管", "一般大眾與消費者", "自訂設定", "不需要設定"]
-        audience = st.selectbox("功能 7: 目標受眾", audiences)
+        audience = st.selectbox("參數 7: 目標受眾", audiences)
 
     with col2:
         purposes = ["知識教學/拆解考點", "商業提案/募資", "產品發布", "個案分析", "教育與員工培訓", "專案與進度報告", "數據與成效分析", "行銷企劃與發想", "自訂簡報目的"]
-        goal = st.selectbox("功能 10: 簡報目的", purposes)
+        goal = st.selectbox("參數 10: 簡報目的", purposes)
         tones = ["專業嚴謹且重視證據", "嚴謹客觀且數據驅動", "充滿熱情、激勵性、號召力", "專業自信且具說服力", "輕鬆幽默且平易近人", "溫暖感性、具同理心、啟發性", "自訂設定", "不需要設定"]
-        tone = st.selectbox("功能 8: 講者人設和語氣", tones)
+        tone = st.selectbox("參數 8: 講者人設和語氣", tones)
         ctas = ["引起興趣/刺激意願", "無(純知識分享)", "批准預算/啟動專案", "改變觀念或行為", "了解痛點並促成合作", "引導參與活動/報名課程", "購買產品或服務", "訂閱電子報/加入粉絲團/加入會員", "自訂設定", "不需要設定"]
-        cta = st.selectbox("功能 9: 行動呼籲 (CTA)", ctas)
+        cta = st.selectbox("參數 9: 行動呼籲 (CTA)", ctas)
 
 with tab2:
     st.subheader("🎯 簡報大綱與視覺風格")
     
     outlines = ["總分總架構(適合教學)", "SCQA 金字塔(適合提案)", "NSDB：N(需求)→S(解法)→D(差異)→B(效益)", "黃金圈理論(Why-How-What)", "起承轉合(故事法)", "時間軸演進", "結論與數據先行", "自訂大綱邏輯"]
-    outline = st.selectbox("功能 11: 簡報大綱邏輯", outlines)
+    outline = st.selectbox("參數 11: 簡報大綱邏輯", outlines)
     
     styles = [
         "2.5D 等距視角(Isometric)", "極簡扁平化(Minimalist Flat)", "高階寫實攝影(High-end realistic)",
@@ -56,7 +56,7 @@ with tab2:
         "高對比度極簡風格", "扁平化插畫風格", "北歐簡約插畫風格", 
         "漸層玻璃擬態風格", "教育型遊戲 UI 風格+主角", "自訂視覺風格"
     ]
-    style_choice = st.selectbox("功能 12: 選擇視覺語彙", styles)
+    style_choice = st.selectbox("參數 12: 選擇視覺語彙", styles)
 
     # +主角 的空間構圖與特徵輸入
     ip_desc = ""
@@ -116,12 +116,12 @@ final_prompt = f"""[System Role]
 # ==========================================
 # Phase 4: 輸出區塊
 # ==========================================
-st.header("📦 您的全場景控制 Prompt")
+st.header("📦 成果｜InfoVis PROMPT")
 st.code(final_prompt, language="markdown")
 
 col_btn1, col_btn2, col_btn3 = st.columns(3)
 with col_btn1:
-    st.download_button("📥 下載 .md", final_prompt, "v2_2_prompt.md", "text/markdown", use_container_width=True)
+    st.download_button("📥 下載 .md", final_prompt, "InfoVis_Prompt.md", "text/markdown", use_container_width=True)
 with col_btn2:
     st.link_button("🚀 前往 NotebookLM", "https://notebooklm.google.com/", use_container_width=True)
 with col_btn3:
