@@ -39,11 +39,41 @@ def is_page_number_marker(line: str) -> bool:
     cleaned = line.strip()
     return bool(re.match(r'^(第\s*\d+\s*頁|slide\s*\d+|page\s*\d+|\d+\s*/\s*\d+)$', cleaned, re.IGNORECASE))
 
+# Official model status checked 2026-10-07:
+# https://ai.google.dev/gemini-api/docs/models
+# https://ai.google.dev/gemini-api/docs/deprecations
+# 2.5 is still served, but access is limited to projects with prior usage.
+# One ordered registry drives both the UI and the fallback routing.
+SUPPORTED_MODELS = {
+    "gemini-3.8-flash": "推薦：新專案／新版 Flash",
+    "gemini-3.5-flash-lite": "新專案／低延遲 Flash-Lite",
+    "gemini-2.5-flash": "相容：已有 2.5 存取權限的專案",
+}
+DEFAULT_MODEL = "gemini-3.8-flash"
+
+def get_api_error_code(error):
+    """Prefer the SDK's HTTP code; use message matching only for untyped errors."""
+    code = getattr(error, "code", None)
+    if isinstance(code, int) or (isinstance(code, str) and code.isdigit()):
+        return int(code)
+    message = str(error).lower()
+    http_code = re.search(r"\b(400|401|402|403|404|429|500|502|503|504)\b", message)
+    if http_code:
+        return int(http_code.group(1))
+    for status, markers in (
+        (401, ("api_key_invalid", "api key not valid", "unauthenticated")),
+        (403, ("permission_denied", "forbidden")),
+        (429, ("resource_exhausted", "rate_limit_exceeded", "quota_exceeded")),
+        (404, ("not_found", "no longer available")),
+    ):
+        if any(marker in message for marker in markers):
+            return status
+    return None
+
 def generate_ai_presentation_with_fallback(api_key: str, system_prompt: str, user_content: str, selected_model: str):
     """
-    四層級聯降級（Cascade Fallback）AI 呼叫引擎：
-    首選模型 ➔ gemini-2.5-flash ➔ gemini-1.5-flash ➔ gemini-2.0-flash ➔ gemini-1.5-pro
-    確保 100% 絕不因單一模型 404/下線而崩潰。
+    首選模型優先，再依 SUPPORTED_MODELS 順序備援（去重）。
+    僅模型不存在／不可用 (404) 時切換；配額、權限及其他錯誤立即停止。
     """
     clean_key = sanitize_api_key(api_key)
     if not clean_key:
@@ -52,20 +82,13 @@ def generate_ai_presentation_with_fallback(api_key: str, system_prompt: str, use
     if not GENAI_SDK_AVAILABLE:
         return False, "⚠️ 系統尚未安裝 google-genai 套件，請確認 requirements.txt 設定", None, False
 
+    if selected_model not in SUPPORTED_MODELS:
+        return False, "❌ 不支援的模型：請從 AI 引擎選單選擇目前支援的模型。", None, False
+
     client = genai.Client(api_key=clean_key)
     
-    # 構建四層備援鏈，去重且首選優先
-    fallback_chain = [
-        selected_model,
-        "gemini-2.5-flash",
-        "gemini-1.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-pro"
-    ]
-    unique_chain = []
-    for m in fallback_chain:
-        if m and m not in unique_chain:
-            unique_chain.append(m)
+    # 首選優先：既有 2.5 專案可直接選用；新專案預設從 3.x 開始。
+    unique_chain = list(dict.fromkeys([selected_model, *SUPPORTED_MODELS]))
 
     last_error = None
     fell_back = False
@@ -83,22 +106,23 @@ def generate_ai_presentation_with_fallback(api_key: str, system_prompt: str, use
             return True, response.text, model_name, fell_back
         except Exception as e:
             last_error = e
-            err_str = str(e).lower()
-            # 若為金鑰本身無效或權限問題，立即中斷，避免在錯誤 Key 下盲目輪詢其他模型
-            if any(k in err_str for k in ["api_key_invalid", "api key not valid", "403", "forbidden", "resource_exhausted", "429"]):
+            # 404 才切換模型；429 或權限錯誤不能靠盲目輪詢其他模型解決。
+            if get_api_error_code(e) != 404:
                 break
-            continue
 
     # 透明精確的錯誤診斷回饋
     err_str = str(last_error)
+    error_code = get_api_error_code(last_error)
     if "api_key_invalid" in err_str.lower() or "api key not valid" in err_str.lower():
         diag_msg = "❌ 金鑰無效 (API_KEY_INVALID)：請檢查複製的金鑰是否正確完整（開頭應為 AIzaSy...）。"
-    elif "403" in err_str or "forbidden" in err_str.lower():
-        diag_msg = "❌ 存取受限 (403 Forbidden)：此 API Key 受 Google 政策限制，或未啟用 Generative Language API 存取權限。建議至 Google AI Studio 重新生成。"
-    elif "429" in err_str or "resource_exhausted" in err_str.lower():
-        diag_msg = "❌ 配額上限 (429 Rate Limit)：已達 Google API 免費額度限制，請稍候 1 分鐘再試。"
-    elif "404" in err_str or "not_found" in err_str.lower() or "no longer available" in err_str.lower():
-        diag_msg = "❌ 模型端點未開通或已被 Google 下線 (404 Not Found)：級聯備援皆無法連線，請檢查帳號權限。"
+    elif error_code == 401:
+        diag_msg = "❌ 驗證失敗 (401 Unauthorized)：請檢查 API Key 是否有效。"
+    elif error_code == 403:
+        diag_msg = "❌ 存取受限 (403 Forbidden)：請檢查 API Key、專案權限與 Generative Language API 是否已啟用；系統未自動切換模型。"
+    elif error_code == 429:
+        diag_msg = "❌ 配額或速率限制 (429 Rate Limit)：請依 Google 錯誤指示等待重試或檢查專案配額；系統未自動切換模型。"
+    elif error_code == 404:
+        diag_msg = "❌ 模型不可用 (404 Not Found)：支援的備援模型皆不可用。請檢查模型與專案存取權限；新專案請使用 3.x，2.5 僅保留既有存取相容性。"
     else:
         diag_msg = f"❌ 呼叫失敗：{err_str}"
 
@@ -128,14 +152,16 @@ with st.sidebar:
     )
     clean_user_key = sanitize_api_key(user_api_key)
     
-    selected_model_engine = "gemini-2.5-flash"
+    selected_model_engine = DEFAULT_MODEL
     if clean_user_key:
         st.success("🟢 已提供 API Key：已解鎖在線 AI 實戰生成！")
         selected_model_engine = st.selectbox(
             "AI 引擎選擇 (含級聯自動降級)：",
-            ["gemini-2.5-flash (推薦：最新極速運算)", "gemini-1.5-flash (經典高相容版)", "gemini-2.0-flash (穩健平衡版)", "gemini-1.5-pro (深度邏輯版)"],
-            index=0
-        ).split(" ")[0]
+            list(SUPPORTED_MODELS),
+            index=list(SUPPORTED_MODELS).index(DEFAULT_MODEL),
+            format_func=lambda model: f"{model} ({SUPPORTED_MODELS[model]})"
+        )
+        st.caption("新專案請選 3.x；2.5 僅供已有存取權限的專案。僅 404 自動備援，配額／權限錯誤會停止。")
     else:
         st.info("ℹ️ 目前處於純提示詞模式（無需 API Key）。")
         
@@ -401,7 +427,7 @@ st.divider()
 # Phase 5: AI 現場極速直出區 (BYOK 實戰詠唱模式)
 # ==========================================
 st.header("⚡ 成果 2｜AI 現場即時生成 (BYOK 實戰直出模式)")
-st.caption("內建四層級聯降級（Cascade Fallback）與智能防護，避免 404/403 斷線風險。")
+st.caption("模型不可用 (404) 時依序備援；配額／權限錯誤會停止並顯示診斷。")
 
 if clean_user_key:
     if st.button("🚀 召喚 AI 現場為我編譯生成完整簡報大綱與視覺提案", type="primary", use_container_width=True):
