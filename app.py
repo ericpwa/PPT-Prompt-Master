@@ -302,7 +302,7 @@ with tab3:
 
     raw_text = st.text_area(
         "在此貼上文稿或摘要 (建議 5,000 字內)：",
-        value=st.session_state.raw_text_draft,
+        key="raw_text_draft",
         height=200,
         placeholder="例如：第一頁：2027 年度策略目標\n第二頁：關鍵指標與市場成效..."
     )
